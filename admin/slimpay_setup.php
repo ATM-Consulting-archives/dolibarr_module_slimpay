@@ -31,6 +31,7 @@ if (! $res) {
 // Libraries
 require_once DOL_DOCUMENT_ROOT . "/core/lib/admin.lib.php";
 require_once '../lib/slimpay.lib.php';
+require_once '../class/slimpay.class.php';
 
 // Translations
 $langs->load("slimpay@slimpay");
@@ -46,32 +47,32 @@ $action = GETPOST('action', 'alpha');
 /*
  * Actions
  */
-if (preg_match('/set_(.*)/',$action,$reg))
-{
-	$code=$reg[1];
-	if (dolibarr_set_const($db, $code, GETPOST($code), 'chaine', 0, '', $conf->entity) > 0)
-	{
-		header("Location: ".$_SERVER["PHP_SELF"]);
-		exit;
+if ($action == 'setvar') {
+	foreach ( $_POST as $key => $val ) {
+
+		if (substr($key, 0, 8) == 'SLIMPAY_') {
+			$res = dolibarr_set_const($db, $key, $val, 'chaine', 0, '', 0);
+			if (! $res > 0)
+				$error ++;
+
+			if ($error) {
+				setEventMessage($langs->trans("Error"), 'errors');
+			}
+		}
 	}
-	else
-	{
-		dol_print_error($db);
+
+	if (empty($error)) {
+		setEventMessage($langs->trans("SetupSaved"), 'mesgs');
 	}
-}
-	
-if (preg_match('/del_(.*)/',$action,$reg))
-{
-	$code=$reg[1];
-	if (dolibarr_del_const($db, $code, 0) > 0)
-	{
-		Header("Location: ".$_SERVER["PHP_SELF"]);
-		exit;
+}elseif ($action=="testcredentials") {
+	$api = new Slimpay();
+	$result=$api->testSlimApyConnection();
+	if ($result<0) {
+		setEventMessages(null, $api->errors,'errors');
+	} else {
+		setEventMessages(null, $langs->trans('SlimPayConnectOK'),'mesgs');
 	}
-	else
-	{
-		dol_print_error($db);
-	}
+
 }
 
 /*
@@ -98,35 +99,74 @@ dol_fiche_head(
 // Setup page goes here
 $form=new Form($db);
 $var=false;
+print '<form method="POST" action="'.$_SERVER['PHP_SELF'].'">';
+print '<input type="hidden" name="token" value="'.$_SESSION['newtoken'].'">';
+print '<input type="hidden" name="action" value="setvar">';
 print '<table class="noborder" width="100%">';
 print '<tr class="liste_titre">';
-print '<td>'.$langs->trans("Parameters").'</td>'."\n";
-print '<td align="center" width="20">&nbsp;</td>';
-print '<td align="center" width="100">'.$langs->trans("Value").'</td>'."\n";
+print '<td width="300px">'.$langs->trans("Parameters").'</td>'."\n";
+print '<td>'.$langs->trans("Value").'</td>'."\n";
 
 
 // Example with a yes / no select
 $var=!$var;
 print '<tr '.$bc[$var].'>';
-print '<td>'.$langs->trans("ParamLabel").'</td>';
-print '<td align="center" width="20">&nbsp;</td>';
-print '<td align="right" width="300">';
-print '<form method="POST" action="'.$_SERVER['PHP_SELF'].'">';
-print '<input type="hidden" name="token" value="'.$_SESSION['newtoken'].'">';
-print '<input type="hidden" name="action" value="set_CONSTNAME">';
-print $form->selectyesno("CONSTNAME",$conf->global->CONSTNAME,1);
-print '<input type="submit" class="button" value="'.$langs->trans("Modify").'">';
-print '</form>';
-print '</td></tr>';
+print '<td>'.$langs->trans("SLIMPAY_USER").'</td>';
+print '<td>';
+print '<input type="text" name="SLIMPAY_USER" value="'.$conf->global->SLIMPAY_USER.'" class="flat"/>';
+print '</td>';
+print '</tr>';
 
 $var=!$var;
 print '<tr '.$bc[$var].'>';
-print '<td>'.$langs->trans("ParamLabel").'</td>';
-print '<td align="center" width="20">&nbsp;</td>';
-print '<td align="center" width="300">';
-print ajax_constantonoff('CONSTNAME');
-print '</td></tr>';
+print '<td width="300px">'.$langs->trans("SLIMPAY_PASSWORD").'</td>';
+print '<td>';
+print '<input type="text" size="30" name="SLIMPAY_PASSWORD" value="'.$conf->global->SLIMPAY_PASSWORD.'" class="flat"/>';
+print '</td>';
+print '</tr>';
 
+$var=!$var;
+print '<tr '.$bc[$var].'>';
+print '<td width="300px">'.$langs->trans("SLIMPAY_CREDITORREF").'</td>';
+print '<td>';
+print '<input type="text" name="SLIMPAY_CREDITORREF" value="'.$conf->global->SLIMPAY_CREDITORREF.'" class="flat"/>';
+print '</td>';
+print '</tr>';
+
+
+$var=!$var;
+print '<tr '.$bc[$var].'>';
+print '<td width="300px">'.$langs->trans("SLIMPAY_URLAPI").'</td>';
+print '<td>';
+print '<input type="text" size="30" name="SLIMPAY_URLAPI" value="'.$conf->global->SLIMPAY_URLAPI.'" class="flat"/>';
+print '</td>';
+print '</tr>';
+
+$var=!$var;
+print '<tr '.$bc[$var].'>';
+print '<td colspan="2" align="center">';
+print '<input type="submit" class="button" value="'.$langs->trans("Modify").'">';
+print '<a class="button" href="'.$_SERVER['PHP_SELF'].'?action=testcredentials">'.$langs->trans("SlimPayTestConnection").'</a>';
+print '</td>';
+print '</tr>';
+
+print '</table>';
+
+
+print '</form>';
+
+
+print '<table class="noborder" width="100%">';
+print '<tr class="liste_titre">';
+print '<td width="300px">'.$langs->trans("Parameters").'</td>'."\n";
+print '<td>'.$langs->trans("Value").'</td>'."\n";
+$var=!$var;
+print '<tr '.$bc[$var].'>';
+print '<td width="300px">'.$langs->trans("SLIMPAY_ONINVOICECREATION").'</td>';
+print '<td>';
+print ajax_constantonoff('SLIMPAY_ONINVOICECREATION');
+print '</td>';
+print '</tr>';
 print '</table>';
 
 llxFooter();
