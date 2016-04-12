@@ -5,3 +5,12 @@ ATMAbout = Ce module a été développé par <a href="http://www.atm-consulting.
 
 SlimpaySetup = Configuration du module Slimpay
 SlimpayAbout = A propos du module Slimpay
+
+
+SLIMPAY_USER=Utilisateur API Slimpay
+SLIMPAY_PASSWORD=Mot de passe API Slimpay
+SLIMPAY_CREDITORREF=Référence créditeur API Slimpay
+SLIMPAY_URLAPI=URL API Slimpay
+SLIMPAY_ONINVOICECREATION=Activer le paiement SlimPay sur création de facture
+SlimPayTestConnection=Tester les identifiants 
+SlimPayConnectOK=Les identifants semble correcte
