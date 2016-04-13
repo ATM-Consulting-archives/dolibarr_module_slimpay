@@ -107,20 +107,29 @@ class InterfaceSlimpaytrigger
 	 * @return int <0 if KO, 0 if no triggered ran, >0 if OK
 	 */
 	public function run_trigger($action, $object, $user, $langs, $conf) {
-		// Put here code you want to execute when a Dolibarr business events occurs.
-		// Data and type of action are stored into $object and $action
-		// Users
+
 
 		// Bills
 		if ($action == 'BILL_CREATE') {
 			dol_syslog("Trigger '" . $this->name . "' for action '$action' launched by " . __FILE__ . ". id=" . $object->id, LOG_DEBUG);
+			require_once DOL_DOCUMENT_ROOT.'/compta/facture/class/facture.class.php';
 
-			if ($conf->global->SLIMPAY_ONEVENT=='SLIMPAY_ONINVOICECREATION') {
+			if ($conf->global->SLIMPAY_ONEVENT=='SLIMPAY_ONINVOICECREATION' && $object->total_ttc>0 && $object->type==Facture::TYPE_STANDARD) {
 				dol_syslog("Let Go for SlimPay Transaction", LOG_DEBUG);
 				dol_include_once('/slimpay/class/slimpay.class.php');
 
 				$slimpay= new Slimpay($this->db);
-				$slimpay->createOrderFromInvoice($object,$user);
+				$result=$slimpay->createOrderFromInvoice($object,$user);
+				if ($result<0) {
+					$this->errors=$slimpay->errors;
+					$error++;
+				}
+
+				if (!empty($error)) {
+					return -1;
+				} else {
+					return 1;
+				}
 			}
 		}
 

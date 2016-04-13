@@ -76,6 +76,12 @@ if ($action == 'setvar') {
 	}
 }
 
+if (!empty($conf->global->SLIMPAY_URLBEFORE) || !empty($conf->global->SLIMPAY_URLAFTER)) {
+	if (!function_exists('curl_init')) {
+		setEventMessage($langs->transnoentities('SlimPayInstallCURLphp'),'errors');
+	}
+}
+
 /*
  * View
  */
@@ -175,6 +181,22 @@ $arrayval['SLIMPAY_ADDBUTTONONINVOICE'] = $langs->trans('SLIMPAY_ADDBUTTONONINVO
 print $form->selectarray('SLIMPAY_ONEVENT', $arrayval, $conf->global->SLIMPAY_ONEVENT);
 
 print '</select>';
+print '</td>';
+print '</tr>';
+
+$var = ! $var;
+print '<tr ' . $bc[$var] . '>';
+print '<td width="300px">' . $langs->trans("SLIMPAY_URLBEFORE") . '</td>';
+print '<td>';
+print '<input type="text" size="30" name="SLIMPAY_URLBEFORE" value="' . $conf->global->SLIMPAY_URLBEFORE . '" class="flat"/>';
+print '</td>';
+print '</tr>';
+
+$var = ! $var;
+print '<tr ' . $bc[$var] . '>';
+print '<td width="300px">' . $langs->trans("SLIMPAY_URLAFTER") . '</td>';
+print '<td>';
+print '<input type="text" size="30" name="SLIMPAY_URLAFTER" value="' . $conf->global->SLIMPAY_URLAFTER . '" class="flat"/>';
 print '</td>';
 print '</tr>';
 

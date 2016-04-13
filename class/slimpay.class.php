@@ -18,7 +18,7 @@
 dol_include_once('/slimpay/lib/vendor/autoload.php');
 
 require_once DOL_DOCUMENT_ROOT . '/compta/facture/class/facture.class.php';
-require_once DOL_DOCUMENT_ROOT .'/core/class/commonobject.class.php';
+require_once DOL_DOCUMENT_ROOT . '/core/class/commonobject.class.php';
 
 use \HapiClient\Http;
 use \HapiClient\Hal;
@@ -37,12 +37,11 @@ class Slimpay extends CommonObject
 {
 
 	/**
-	 * 	Constructor
+	 * Constructor
 	 *
-	 * 	@param	DoliDB		$db			Database handler
+	 * @param DoliDB $db Database handler
 	 */
-	function __construct($db)
-	{
+	function __construct(&$db) {
 		$this->db = $db;
 	}
 
@@ -86,20 +85,81 @@ class Slimpay extends CommonObject
 	 * @param User $user User
 	 * @return int <0 if KO, or 1 if OK
 	 */
-	public function createOrderFromInvoice(Facture $invoice,User $user) {
-		global $conf;
+	public function createOrderFromInvoice(Facture $invoice, User $user) {
+		global $conf, $mysoc;
 
-		$error=0;
+		$error = 0;
 
-		$result=$invoice->fetch_thirdparty($invoice->socid);
-		if ($result<0) {
-			$error++;
-			$this->errors[]=get_class($this).'::'.__METHOD__.' Cannot Fetch Thridparty From invocie';
+		$result = $invoice->fetch_thirdparty($invoice->socid);
+		if ($result < 0) {
+			$error ++;
+			$this->errors[] = get_class($this) . '::' . __METHOD__ . ' Cannot Fetch Thridparty From invocie';
 		}
 
 		$authConnect = new Http\Auth\Oauth2BasicAuthentication('/oauth/token', $conf->global->SLIMPAY_USER, $conf->global->SLIMPAY_PASSWORD);
 
 		$hapiClient = new Http\HapiClient($conf->global->SLIMPAY_URLAPI, '/', 'https://api.slimpay.net/alps/v1', $authConnect);
+
+		// Paiement par carte bleue
+		$items = array ();
+		if ($invoice->mode_reglement_id == 6) {
+			$items = array (
+					array (
+							'type' => cardTransaction,
+							'cardTransaction' => array (
+									'amount' => $invoice->total_ttc,
+									'executionDate' => null,
+									'operation' => 'authorizationDebit',
+									'reference' => null
+							)
+					)
+			);
+		} elseif ($invoice->mode_reglement_id == 3) {
+			$items = array (
+					array (
+							'autoGenReference' => true,
+							'type' => 'signMandate',
+							'mandate' => array (
+									'createSequenceType' => null,
+									'dateSigned' => null,
+									'reference' => null,
+									'rum' => null,
+									'standard' => 'SEPA',
+									'signatory' => array (
+											'companyName' => $invoice->thirdparty->name,
+											'email' => $invoice->thirdparty->email,
+											'familyName' => $invoice->thirdparty->name,
+											'givenName' => $invoice->thirdparty->name,
+											'honorificPrefix' => null,
+											'organizationName' => null,
+											'telephone' => $invoice->thirdparty->phone,
+											'bankAccount' => array (
+													'bic' => null,
+													'iban' => null
+											),
+											'billingAddress' => array (
+													'city' => $invoice->thirdparty->town,
+													'country' => $invoice->thirdparty->country_code,
+													'postalCode' => $invoice->thirdparty->zip,
+													'street1' => $invoice->thirdparty->address,
+													'street2' => null
+											)
+									)
+							)
+					),
+					array (
+							'type' => 'directDebit',
+							'directDebit' => array (
+									'amount' => $invoice->total_ttc,
+									'executionDate' => null,
+									'label' => $mysoc->name . ' - ' . $invoice->ref,
+									'paymentReference' => 'mypayment'
+							)
+					)
+			);
+		}
+
+		// if (empty($type_transac)
 
 		// The Relations Namespace
 		$relNs = 'https://api.slimpay.net/alps#';
@@ -115,17 +175,7 @@ class Slimpay extends CommonObject
 				'subscriber' => array (
 						'reference' => $invoice->thirdparty->name
 				),
-				'items' => array (
-						array (
-								'type' => 'cardTransaction',
-								'cardTransaction' => array (
-										'amount' => $invoice->total_ttc,
-										'executionDate' => null,
-										'operation' => 'authorizationDebit',
-										'reference' => null
-								)
-						)
-				)
+				'items' => $items
 		)));
 		$res = $hapiClient->sendFollow($follow);
 
@@ -133,74 +183,116 @@ class Slimpay extends CommonObject
 			$res = $hapiClient->sendFollow($follow);
 		} catch ( Exception $e ) {
 			$this->errors[] = $e->getMessage();
-			$error++;
+			$error ++;
 		}
 
 		// The Resource's state
 		$state = $res->getState();
 
-		dol_syslog(get_class($this).'::'.__METHOD__.'$res='.var_export($res,true). ' $state='.var_export($state,true),LOG_DEBUG);
+		dol_syslog(get_class($this) . '::' . __METHOD__ . '$res=' . var_export($res, true) . ' $state=' . var_export($state, true), LOG_DEBUG);
 
 		if (is_array($state) && array_key_exists('reference', $state) && ! empty($state['reference'])) {
 
-			$invoice->array_options['options_refext_slimpay']=$state['reference'];
-			$result=$invoice->update($user,true);
-			if ($result<0) {
-				$this->errors = array_merge($this->errors,$invoice->errors);
-				$error++;
+			// Valid Invoice
+			$result = $invoice->setBankAccount($conf->global->SLIMPAY_DEFAULTBANK);
+			if ($result < 0) {
+				$this->errors[] = $this->error;
+				$error ++;
+			}
+
+			$result = $invoice->validate($user);
+			if ($result < 0) {
+				$this->errors = array_merge($this->errors, $invoice->errors);
+				$error ++;
+			}
+
+			$invoice->array_options['options_refext_slimpay'] = $state['reference'];
+
+			$result = $invoice->insertExtraFields($user, true);
+			if ($result < 0) {
+				$this->errors = array_merge($this->errors, $invoice->errors);
+				$error ++;
 			}
 		} else {
-			$this->errors[] = get_class($this).'::'.__METHOD__.' Problem with SlimPay';
-			$error++;
+			$this->errors[] = get_class($this) . '::' . __METHOD__ . ' Problem with SlimPay';
+			$error ++;
 		}
 
-		//Pass invoice payed if no error
-		if (empty($error) && !empty($conf->global->SLIMPAY_INVOICEPAYEDONSUCCES) && ! empty($conf->banque->enabled)) {
-			require_once DOL_DOCUMENT_ROOT.'/compta/paiement/class/paiement.class.php';
+		// Pass invoice payed if no error
+		if (empty($error) && ! empty($conf->global->SLIMPAY_INVOICEPAYEDONSUCCES) && ! empty($conf->banque->enabled)) {
+			require_once DOL_DOCUMENT_ROOT . '/compta/paiement/class/paiement.class.php';
 			$paiement = new Paiement($this->db);
-			$paiement->datepaye     = dol_now();
-			$paiement->amounts      = array($invoice->id=>$invoice->total_ttc);   // Array with all payments dispatching
-			$paiement->paiementid   = $invoice->mode_reglement_id;
+			$paiement->datepaye = dol_now();
+			$paiement->amounts = array (
+					$invoice->id => $invoice->total_ttc
+			); // Array with all payments dispatching
+			$paiement->paiementid = $invoice->mode_reglement_id;
 			$paiement->num_paiement = $state['reference'];
-			$paiement->note         = null;
+			$paiement->note = null;
 
-			if (! $error)
-			{
+			if (! $error) {
 				$paiement_id = $paiement->create($user, 1);
-				if ($paiement_id < 0)
-				{
-					$this->errors[]=$paiement->error;
-					$error++;
+				if ($paiement_id < 0) {
+					$this->errors[] = $paiement->error;
+					$error ++;
 				}
 			}
 
-			if (! $error)
-			{
-				$label='(CustomerInvoicePayment)';
-				$result=$paiement->addPaymentToBank($user,'payment',$label,$conf->global->SLIMPAY_DEFAULTBANK,'','');
-				if ($result < 0)
-				{
-					$this->errors[]=$paiement->error;
-					$error++;
+			if (! $error) {
+				$label = '(CustomerInvoicePayment)';
+				$result = $paiement->addPaymentToBank($user, 'payment', $label, $invoice->fk_account, '', '');
+				if ($result < 0) {
+					$this->errors[] = $paiement->error;
+					$error ++;
 				}
 			}
 		}
 
-		//If error during payment process
-		//Delete invoice
-		if (!empty($error) && !empty($conf->global->SLIMPAY_DELETEINVONFAILURE)) {
-			$result=$invoice->delete($invoice->id);
-			if ($result<0) {
-				$this->errors[] = array_merge($this->errors,$invoice->errors);
-				$error++;
+		// If error during payment process
+		// Delete invoice
+		if (! empty($error) && ! empty($conf->global->SLIMPAY_DELETEINVONFAILURE)) {
+			$result = $invoice->delete($invoice->id);
+			if ($result < 0) {
+				$this->errors[] = array_merge($this->errors, $invoice->errors);
+				$error ++;
 			}
 		}
 
 		if (empty($error)) {
 			return 1;
 		} else {
-			return -1;
+			return - 1;
 		}
+	}
 
+	/**
+	 * callUrl
+	 * @param string $requestType
+	 */
+	public function callUrl($requestType = '') {
+		if (! empty($conf->global->$requestType)) {
+			$curl_handle = curl_init();
+
+			$options = array (
+					CURLOPT_URL => $conf->global->$requestType,
+					CURLOPT_RETURNTRANSFER => true
+			);
+
+			curl_setopt_array($curl_handle, $options);
+			$buffer = curl_exec($curl_handle);
+			$result = curl_getinfo($curl_handle, CURLINFO_HTTP_CODE);
+			curl_close($curl_handle);
+
+			if ($result != 200) {
+				$error ++;
+				$this->error = $buffer;
+				dol_syslog(get_class($this) . "::" . __METHOD__ . " ERROR " . $result . " script lauch url:" . $urltocall, LOG_ERR);
+			}
+		}
+		if (empty($error)) {
+			return 1;
+		} else {
+			return - 1;
+		}
 	}
 }

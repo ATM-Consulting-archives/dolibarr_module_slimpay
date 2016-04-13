@@ -13,7 +13,9 @@ SLIMPAY_USER=Utilisateur API Slimpay
 SLIMPAY_PASSWORD=Mot de passe API Slimpay
 SLIMPAY_CREDITORREF=Référence créditeur API Slimpay
 SLIMPAY_URLAPI=URL API Slimpay
-
+SLIMPAY_URLBEFORE=URL appeler avec CURL avant l'enregistrement des coordonées bancaire
+SLIMPAY_URLAFTER=URL appeler avec CURL aprés l'enregistrement des coordonées bancaire
+SlimPayInstallCURLphp=Le module php SURL ne semble pas installer, veuillez contacter votre admnistrateur
 SLIMPAY_DELETEINVONFAILURE=Supprimer la facture en cas d'echec de paiement 
 SLIMPAY_EVENTCREATE=Intéraction SlimPay commande/facture
 
