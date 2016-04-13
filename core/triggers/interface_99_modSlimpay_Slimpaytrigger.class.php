@@ -1,5 +1,5 @@
 <?php
-/* <one line to give the program's name and a brief idea of what it does.>
+/* <SlimPay>
  * Copyright (C) 2015 ATM Consulting <support@atm-consulting.fr>
  *
  * This program is free software: you can redistribute it and/or modify
@@ -115,12 +115,12 @@ class InterfaceSlimpaytrigger
 		if ($action == 'BILL_CREATE') {
 			dol_syslog("Trigger '" . $this->name . "' for action '$action' launched by " . __FILE__ . ". id=" . $object->id, LOG_DEBUG);
 
-			if (! empty($conf->global->SLIMPAY_ONINVOICECREATION)) {
+			if ($conf->global->SLIMPAY_ONEVENT=='SLIMPAY_ONINVOICECREATION') {
 				dol_syslog("Let Go for SlimPay Transaction", LOG_DEBUG);
 				dol_include_once('/slimpay/class/slimpay.class.php');
 
-				$slimpay= new Slimpay();
-				$slimpay->createOrder();
+				$slimpay= new Slimpay($this->db);
+				$slimpay->createOrderFromInvoice($object,$user);
 			}
 		}
 

@@ -1,5 +1,5 @@
 <?php
-/* <one line to give the program's name and a brief idea of what it does.>
+/* <SlimPay>
  * Copyright (C) 2015 ATM Consulting <support@atm-consulting.fr>
  *
  * This program is free software: you can redistribute it and/or modify
@@ -15,9 +15,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-require_once '../lib/vendor/autoload.php';
+dol_include_once('/slimpay/lib/vendor/autoload.php');
 
 require_once DOL_DOCUMENT_ROOT . '/compta/facture/class/facture.class.php';
+require_once DOL_DOCUMENT_ROOT .'/core/class/commonobject.class.php';
 
 use \HapiClient\Http;
 use \HapiClient\Hal;
@@ -32,13 +33,17 @@ use \HapiClient\Hal;
 /**
  * Class Slimpay
  */
-class Slimpay
+class Slimpay extends CommonObject
 {
 
 	/**
-	 * Constructor
+	 * 	Constructor
+	 *
+	 * 	@param	DoliDB		$db			Database handler
 	 */
-	public function __construct() {
+	function __construct($db)
+	{
+		$this->db = $db;
 	}
 
 	/**
@@ -75,13 +80,22 @@ class Slimpay
 	}
 
 	/**
+	 * createOrderFromInvoice
 	 *
+	 * @param Facture $invoice Invoice Source
+	 * @param User $user User
 	 * @return int <0 if KO, or 1 if OK
 	 */
-	public function CreateOrder(Facture $invoice) {
+	public function createOrderFromInvoice(Facture $invoice,User $user) {
 		global $conf;
 
-		$invoice->fetch_thirdparty($invoice->socid);
+		$error=0;
+
+		$result=$invoice->fetch_thirdparty($invoice->socid);
+		if ($result<0) {
+			$error++;
+			$this->errors[]=get_class($this).'::'.__METHOD__.' Cannot Fetch Thridparty From invocie';
+		}
 
 		$authConnect = new Http\Auth\Oauth2BasicAuthentication('/oauth/token', $conf->global->SLIMPAY_USER, $conf->global->SLIMPAY_PASSWORD);
 
@@ -119,18 +133,74 @@ class Slimpay
 			$res = $hapiClient->sendFollow($follow);
 		} catch ( Exception $e ) {
 			$this->errors[] = $e->getMessage();
-			return - 1;
+			$error++;
 		}
 
 		// The Resource's state
 		$state = $res->getState();
 
-		var_dump($state);
+		dol_syslog(get_class($this).'::'.__METHOD__.'$res='.var_export($res,true). ' $state='.var_export($state,true),LOG_DEBUG);
+
 		if (is_array($state) && array_key_exists('reference', $state) && ! empty($state['reference'])) {
 
-			$invocie_ref=$state['reference'];
-
-			return 1;
+			$invoice->array_options['options_refext_slimpay']=$state['reference'];
+			$result=$invoice->update($user,true);
+			if ($result<0) {
+				$this->errors = array_merge($this->errors,$invoice->errors);
+				$error++;
+			}
+		} else {
+			$this->errors[] = get_class($this).'::'.__METHOD__.' Problem with SlimPay';
+			$error++;
 		}
+
+		//Pass invoice payed if no error
+		if (empty($error) && !empty($conf->global->SLIMPAY_INVOICEPAYEDONSUCCES) && ! empty($conf->banque->enabled)) {
+			require_once DOL_DOCUMENT_ROOT.'/compta/paiement/class/paiement.class.php';
+			$paiement = new Paiement($this->db);
+			$paiement->datepaye     = dol_now();
+			$paiement->amounts      = array($invoice->id=>$invoice->total_ttc);   // Array with all payments dispatching
+			$paiement->paiementid   = $invoice->mode_reglement_id;
+			$paiement->num_paiement = $state['reference'];
+			$paiement->note         = null;
+
+			if (! $error)
+			{
+				$paiement_id = $paiement->create($user, 1);
+				if ($paiement_id < 0)
+				{
+					$this->errors[]=$paiement->error;
+					$error++;
+				}
+			}
+
+			if (! $error)
+			{
+				$label='(CustomerInvoicePayment)';
+				$result=$paiement->addPaymentToBank($user,'payment',$label,$conf->global->SLIMPAY_DEFAULTBANK,'','');
+				if ($result < 0)
+				{
+					$this->errors[]=$paiement->error;
+					$error++;
+				}
+			}
+		}
+
+		//If error during payment process
+		//Delete invoice
+		if (!empty($error) && !empty($conf->global->SLIMPAY_DELETEINVONFAILURE)) {
+			$result=$invoice->delete($invoice->id);
+			if ($result<0) {
+				$this->errors[] = array_merge($this->errors,$invoice->errors);
+				$error++;
+			}
+		}
+
+		if (empty($error)) {
+			return 1;
+		} else {
+			return -1;
+		}
+
 	}
 }

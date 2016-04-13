@@ -1,5 +1,5 @@
 <?php
-/* <one line to give the program's name and a brief idea of what it does.>
+/* <SlimPay>
  * Copyright (C) 2015 ATM Consulting <support@atm-consulting.fr>
  *
  * This program is free software: you can redistribute it and/or modify
@@ -64,52 +64,35 @@ class ActionsSlimpay
 		$error = 0; // Error counter
 		//$myvalue = ''; // A result value
 
-		if (in_array('invoicecard', explode(':', $parameters['context'])))
+		if (in_array('invoicecard', explode(':', $parameters['context'])) && $conf->global->SLIMPAY_ONEVENT=='SLIMPAY_ADDBUTTONONINVOICE')
 		{
-		 	// hbmqwlrpwz5idas
-		 	//  f%Oj5AvCJlMYiD~8m6#UG~c~sZ3q
-		  	?>
-		  	<div class="inline-block divButAction"><a href="javascript:slimpay_card();" class="butAction">Slimpay par carte</a></div>
-		  	<script type="text/javascript">
-		  		function slimpay_card() {
-		  			
-		  			var url_auth = "https://api-sandbox.slimpay.net/oauth/token";
-		  			var url_;
-		  			
-		  			
-		  			var data = {
-					    "locale": null,
-					    "reference": null,
-					    "started": true,
-					    "creditor": {
-					        "reference": "democreditor"
-					    },
-					    "subscriber": {
-					        "reference": "subscriber01"
-					    },
-					    "items": [
-					        {
-					            "type": "cardTransaction",
-					            "cardTransaction": {
-					                "amount": "100",
-					                "executionDate": null,
-					                "operation": "authorizationDebit",
-					                "reference": null
-					            }
-					        }
-					    ]
-					}
-		  	</script>
-		  	<?php
-		  
-		  
+		 	//TODO invoice card replace button
+
+
 		}
+
+		/*if (in_array('ordercard', explode(':', $parameters['context'])) && $conf->global->SLIMPAY_ONEVENT=='SLIMPAY_REPLACEBUTTONORDERVAL')
+		{
+			$out_js = '<script type="text/javascript">'."\n";
+			$out_js .= '	$(document).ready(function() {'."\n";
+			$out_js .= '		// Collect options'."\n";
+			$out_js .= '		var bt = $(\'a.butAction[href*="action=validate"]\');'."\n";
+			$out_js .= '		if (bt.length == 0)'."\n";
+			$out_js .= '		{'."\n";
+			$out_js .= '			bt.remove();'."\n";
+			$out_js .= '			var btOrder = $(\'<div class="inline-block divButAction"><a class="butAction" href="'.dol_buildpath('/slimpay/slimpay.php',2).'action=validateorder='.$object->id.'">'.$langs->transnoentitiesnoconv("SlimPayPayWith").'</a></div>\');'."\n";
+			$out_js .= '			$(\'div.tabsAction\').append(btOrder);'."\n";
+			$out_js .= '		}'."\n";
+			$out_js .= '	});'."\n";
+			$out_js .= '</script>';
+
+		}*/
 
 		if (! $error)
 		{
-			/*$this->results = array('myreturn' => $myvalue);
-			$this->resprints = '';*/
-			return 0; // or return 1 to replace standard code
+			print $out_js;
+			// or return 1 to replace standard code
+			return 0;
 		}
 		else
 		{

@@ -6,11 +6,23 @@ ATMAbout = Ce module a été développé par <a href="http://www.atm-consulting.
 SlimpaySetup = Configuration du module Slimpay
 SlimpayAbout = A propos du module Slimpay
 
-
+#
+# Admin
+#
 SLIMPAY_USER=Utilisateur API Slimpay
 SLIMPAY_PASSWORD=Mot de passe API Slimpay
 SLIMPAY_CREDITORREF=Référence créditeur API Slimpay
 SLIMPAY_URLAPI=URL API Slimpay
+
+SLIMPAY_DELETEINVONFAILURE=Supprimer la facture en cas d'echec de paiement 
+SLIMPAY_EVENTCREATE=Intéraction SlimPay commande/facture
+
+SLIMPAY_ADDBUTTONONINVOICE=Ajout boutton Paiement Slimpay sur la page de facture
 SLIMPAY_ONINVOICECREATION=Activer le paiement SlimPay sur création de facture
+
+SLIMPAY_INVOICEPAYEDONSUCCES=Passer la facture en Valider & Payé si il n'y a pas d'erreur
+SLIMPAY_DEFAULTBANK=Compte bancaire à utilisé
+SlimPayRefElement=Référence SlimPay
 SlimPayTestConnection=Tester les identifiants 
 SlimPayConnectOK=Les identifants semble correcte
+SlimPayPayWith=Payer avec SlimPay

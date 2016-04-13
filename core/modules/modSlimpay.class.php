@@ -88,9 +88,9 @@ class modSlimpay extends DolibarrModules
 		//							'workflow' => array('WORKFLOW_MODULE1_YOURACTIONTYPE_MODULE2'=>array('enabled'=>'! empty($conf->module1->enabled) && ! empty($conf->module2->enabled)', 'picto'=>'yourpicto@slimpay')) // Set here all workflow context managed by module
 		//                        );
 		$this->module_parts = array(
-		
-			'hooks'=>array('invoicecard')
-			
+			'triggers'=>1,
+			'hooks'=>array('invoicecard','ordercard')
+
 		);
 
 		// Data directories to create when module is enabled.
@@ -250,12 +250,20 @@ class modSlimpay extends DolibarrModules
 	 */
 	function init($options='')
 	{
+		global $langs;
+		$langs->load('slimpay@slimpay');
+
 		$sql = array();
-		
+
 		define('INC_FROM_DOLIBARR',true);
 
 		dol_include_once('/slimpay/config.php');
-		dol_include_once('/slimpay/script/create-maj-base.php');
+		//dol_include_once('/slimpay/script/create-maj-base.php');
+
+		dol_include_once('/core/class/extrafields.class.php');
+		$extrafields=new ExtraFields($this->db);
+		$res = $extrafields->addExtraField('refext_slimpay', $langs->trans('SlimPayRefElement'), 'varchar', 0, 255, 'facture');
+
 
 		$result=$this->_load_tables('/slimpay/sql/');
 
