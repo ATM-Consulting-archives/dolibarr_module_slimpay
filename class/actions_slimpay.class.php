@@ -139,7 +139,7 @@ class ActionsSlimpay
 				$out .= '					.done(function( data ) {' . "\n";
 				$out .= '					if (data!=1) {' . "\n";
 				$out .= '						alert("Error "+data);' . "\n";
-				$out .= '					}' . "\n";
+				$out .= '					}else {document.location.href=\''.$_SERVER['_SELF'].'?id='.$object->id.'\';}' . "\n";
 				$out .= '					})' . "\n";
 				$out .= '					.fail(function( data ) {' . "\n";
 				$out .= '					  alert( "Error ");' . "\n";

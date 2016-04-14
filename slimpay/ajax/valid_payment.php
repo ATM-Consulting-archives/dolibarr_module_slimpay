@@ -86,12 +86,21 @@ if (empty($error)) {
 			$error_str .= explode("/n", $slimpay->errors);
 			$error ++;
 		}
+	} else {
+		//Find order link
+		$invoice->fetchObjectLinked(null, 'order');
+		if (is_array($invoice->linkedObjects) && count($invoice->linkedObjects) > 0) {
+			foreach ( $invoice->linkedObjects as $object_type => $object_linked ) {
+				$orderlinked = reset($object_linked);
+				$orderlinked->set_draft($user);
+			}
+		}
 	}
 }
 
 // If error during payment process
 // Delete invoice
-if (! empty($error) && ! empty($conf->global->SLIMPAY_DELETEINVONFAILURE) && ($slimpay->state_invoice != 'closed.completed')) {
+if ((! empty($error) && ! empty($conf->global->SLIMPAY_DELETEINVONFAILURE)) || (! empty($conf->global->SLIMPAY_DELETEINVONFAILURE) && ($slimpay->state_invoice != 'closed.completed'))) {
 	$result = $invoice->delete($invoice->id);
 	if ($result < 0) {
 		$error_str .= $invoice->errors;
