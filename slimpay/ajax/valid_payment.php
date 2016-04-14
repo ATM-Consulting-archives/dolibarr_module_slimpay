@@ -80,7 +80,7 @@ if (empty($error)) {
 }
 
 if (empty($error)) {
-	if ($slimpay->state_invoice = 'closed.completed') {
+	if ($slimpay->state_invoice == 'closed.completed') {
 		$result = $slimpay->setAsPaidInvoice($invoice,$user);
 		if ($result < 0) {
 			$error_str .= explode("/n", $slimpay->errors);
@@ -91,7 +91,7 @@ if (empty($error)) {
 
 // If error during payment process
 // Delete invoice
-if (! empty($error) && ! empty($conf->global->SLIMPAY_DELETEINVONFAILURE)) {
+if (! empty($error) && ! empty($conf->global->SLIMPAY_DELETEINVONFAILURE) && ($slimpay->state_invoice != 'closed.completed')) {
 	$result = $invoice->delete($invoice->id);
 	if ($result < 0) {
 		$error_str .= $invoice->errors;
