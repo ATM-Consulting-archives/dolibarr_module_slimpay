@@ -124,7 +124,7 @@ print '<input type="text" size="30" name="SLIMPAY_PASSWORD" value="' . $conf->gl
 print '</td>';
 print '</tr>';
 
-if (! empty($conf->global->SLIMPAY_PASSWORD && ! empty($conf->global->SLIMPAY_USER))) {
+if (! empty($conf->global->SLIMPAY_PASSWORD) && ! empty($conf->global->SLIMPAY_USER)) {
 	$var = ! $var;
 	print '<tr ' . $bc[$var] . '>';
 	print '<td colspan="2" align="center">';
