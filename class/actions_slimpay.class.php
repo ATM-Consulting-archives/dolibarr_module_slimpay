@@ -99,7 +99,7 @@ class ActionsSlimpay
 		if (in_array('ordercard', explode(':', $parameters['context'])) && $conf->global->SLIMPAY_ONEVENT == 'SLIMPAY_ONINVOICECREATION') {
 			$confirm = GETPOST('confirm');
 			// After order validation Invoice is created
-			if ($action == 'confirm_validate' && $confirm == 'yes' && empty($object->mode_reglement_id)) {
+			if ($action == 'confirm_validate' && $confirm == 'yes' && !empty($object->mode_reglement_id)) {
 
 				$out = '';
 
