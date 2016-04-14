@@ -118,6 +118,7 @@ class ActionsSlimpay
 					setEventMessage($slimpay->error, 'errors');
 				}
 
+				//if ($object->mode_reglement_id==6) {
 				// Display iFrame with Paiement
 				$out = '<div id="paimentvalidation"><iframe src="#" width="100%" height="100%" allowfullscreen webkitallowfullscreen frameborder="0"></iframe></div>' . "\n";
 
@@ -153,6 +154,9 @@ class ActionsSlimpay
 				$out .= '		PaimentValidation_pop();' . "\n";
 				$out .= '	});' . "\n";
 				$out .= '</script>' . "\n";
+				/*} else {
+
+				}*/
 
 				print $out;
 			}

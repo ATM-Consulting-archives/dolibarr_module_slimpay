@@ -115,16 +115,14 @@ class Slimpay extends CommonObject
 							)
 					)
 			);
-		}
-		/*
-		 //Payment by SEPA MANDAT
-		    elseif ($invoice->mode_reglement_id == 3) {
+		} elseif ($invoice->mode_reglement_id == 3) {
+			// Payment by SEPA MANDAT
 			$items = array (
 					array (
 							'autoGenReference' => true,
 							'type' => 'signMandate',
 							'mandate' => array (
-									'createSequenceType' => null,
+									'createSequenceType' => 'OOFF',
 									'dateSigned' => null,
 									'reference' => null,
 									'rum' => null,
@@ -161,7 +159,7 @@ class Slimpay extends CommonObject
 							)
 					)
 			);
-		}*/
+		}
 
 		// if (empty($type_transac)
 
@@ -226,7 +224,7 @@ class Slimpay extends CommonObject
 
 		// Pass invoice payed if no error
 		if (empty($error) && ! empty($conf->global->SLIMPAY_INVOICEPAYEDONSUCCES) && ! empty($conf->banque->enabled) && $setAsPayed) {
-			$result = $this->setAsPaidInvoice($invoice,$user, $invoice->array_options['options_slimpay_refext']);
+			$result = $this->setAsPaidInvoice($invoice, $user, $invoice->array_options['options_slimpay_refext']);
 			if ($result < 0) {
 				$error ++;
 			}
@@ -288,7 +286,7 @@ class Slimpay extends CommonObject
 	 * @param string $ref
 	 * @return int <0 if KO, or 1 if OK
 	 */
-	public function setAsPaidInvoice(Facture $invoice,User $user, $ref='') {
+	public function setAsPaidInvoice(Facture $invoice, User $user, $ref = '') {
 		global $conf, $langs;
 
 		require_once DOL_DOCUMENT_ROOT . '/compta/paiement/class/paiement.class.php';
@@ -298,7 +296,7 @@ class Slimpay extends CommonObject
 				$invoice->id => $invoice->total_ttc
 		); // Array with all payments dispatching
 		$paiement->paiementid = $invoice->mode_reglement_id;
-		$paiement->num_paiement = (empty($ref)?$invoice->array_options['options_slimpay_refext']:$ref);
+		$paiement->num_paiement = (empty($ref) ? $invoice->array_options['options_slimpay_refext'] : $ref);
 		$paiement->note = null;
 
 		if (! $error) {
@@ -333,7 +331,7 @@ class Slimpay extends CommonObject
 	public function checkPaymentState($invoice_slimpayref = '') {
 		global $conf;
 
-		dol_syslog(get_class($this).'::'.__METHOD__. '$invoice_slimpayref='.$invoice_slimpayref, LOG_DEBUG);
+		dol_syslog(get_class($this) . '::' . __METHOD__ . '$invoice_slimpayref=' . $invoice_slimpayref, LOG_DEBUG);
 
 		$authConnect = new Http\Auth\Oauth2BasicAuthentication('/oauth/token', $conf->global->SLIMPAY_USER, $conf->global->SLIMPAY_PASSWORD);
 
@@ -357,7 +355,7 @@ class Slimpay extends CommonObject
 
 		// The Resource's state
 		$state = $res->getState();
-		$this->state_invoice=$state['state'];
+		$this->state_invoice = $state['state'];
 
 		if (empty($error)) {
 			return 1;
