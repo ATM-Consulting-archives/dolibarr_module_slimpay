@@ -262,7 +262,8 @@ class modSlimpay extends DolibarrModules
 
 		dol_include_once('/core/class/extrafields.class.php');
 		$extrafields=new ExtraFields($this->db);
-		$res = $extrafields->addExtraField('refext_slimpay', $langs->trans('SlimPayRefElement'), 'varchar', 0, 255, 'facture');
+		$res = $extrafields->addExtraField('slimpay_refext', $langs->trans('SlimPayRefElement'), 'varchar', 0, 255, 'facture');
+		$res = $extrafields->addExtraField('slimpay_urlval', $langs->trans('SlimPayRefURLVal'), 'varchar', 0, 255, 'facture');
 
 
 		$result=$this->_load_tables('/slimpay/sql/');

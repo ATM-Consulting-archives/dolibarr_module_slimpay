@@ -119,7 +119,7 @@ class InterfaceSlimpaytrigger
 				dol_include_once('/slimpay/class/slimpay.class.php');
 
 				$slimpay= new Slimpay($this->db);
-				$result=$slimpay->createOrderFromInvoice($object,$user);
+				$result=$slimpay->createOrderFromInvoice($object,$user,false);
 				if ($result<0) {
 					$this->errors=$slimpay->errors;
 					$error++;

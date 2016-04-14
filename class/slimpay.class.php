@@ -35,7 +35,7 @@ use \HapiClient\Hal;
  */
 class Slimpay extends CommonObject
 {
-
+	public $urlValidation = '';
 	/**
 	 * Constructor
 	 *
@@ -83,9 +83,10 @@ class Slimpay extends CommonObject
 	 *
 	 * @param Facture $invoice Invoice Source
 	 * @param User $user User
+	 * @param boolean $setAsPayed set as paied directly
 	 * @return int <0 if KO, or 1 if OK
 	 */
-	public function createOrderFromInvoice(Facture $invoice, User $user) {
+	public function createOrderFromInvoice(Facture $invoice, User $user, $setAsPayed = false) {
 		global $conf, $mysoc;
 
 		$error = 0;
@@ -114,7 +115,10 @@ class Slimpay extends CommonObject
 							)
 					)
 			);
-		} elseif ($invoice->mode_reglement_id == 3) {
+		}
+		/*
+		 //Payment by SEPA MANDAT
+		    elseif ($invoice->mode_reglement_id == 3) {
 			$items = array (
 					array (
 							'autoGenReference' => true,
@@ -157,7 +161,7 @@ class Slimpay extends CommonObject
 							)
 					)
 			);
-		}
+		}*/
 
 		// if (empty($type_transac)
 
@@ -206,12 +210,14 @@ class Slimpay extends CommonObject
 				$error ++;
 			}
 
-			$invoice->array_options['options_refext_slimpay'] = $state['reference'];
-
-			$result = $invoice->insertExtraFields($user, true);
-			if ($result < 0) {
-				$this->errors = array_merge($this->errors, $invoice->errors);
-				$error ++;
+			$invoice->array_options['options_slimpay_refext'] = $state['reference'];
+			$invoice->array_options['options_slimpay_urlval'] = $res->getLink('https://api.slimpay.net/alps#user-approval')->getHref();
+			if (empty($error)) {
+				$result = $invoice->insertExtraFields($user, true);
+				if ($result < 0) {
+					$this->errors = array_merge($this->errors, $invoice->errors);
+					$error ++;
+				}
 			}
 		} else {
 			$this->errors[] = get_class($this) . '::' . __METHOD__ . ' Problem with SlimPay';
@@ -219,32 +225,10 @@ class Slimpay extends CommonObject
 		}
 
 		// Pass invoice payed if no error
-		if (empty($error) && ! empty($conf->global->SLIMPAY_INVOICEPAYEDONSUCCES) && ! empty($conf->banque->enabled)) {
-			require_once DOL_DOCUMENT_ROOT . '/compta/paiement/class/paiement.class.php';
-			$paiement = new Paiement($this->db);
-			$paiement->datepaye = dol_now();
-			$paiement->amounts = array (
-					$invoice->id => $invoice->total_ttc
-			); // Array with all payments dispatching
-			$paiement->paiementid = $invoice->mode_reglement_id;
-			$paiement->num_paiement = $state['reference'];
-			$paiement->note = null;
-
-			if (! $error) {
-				$paiement_id = $paiement->create($user, 1);
-				if ($paiement_id < 0) {
-					$this->errors[] = $paiement->error;
-					$error ++;
-				}
-			}
-
-			if (! $error) {
-				$label = '(CustomerInvoicePayment)';
-				$result = $paiement->addPaymentToBank($user, 'payment', $label, $invoice->fk_account, '', '');
-				if ($result < 0) {
-					$this->errors[] = $paiement->error;
-					$error ++;
-				}
+		if (empty($error) && ! empty($conf->global->SLIMPAY_INVOICEPAYEDONSUCCES) && ! empty($conf->banque->enabled) && $setAsPayed) {
+			$result = $this->setAsPaidInvoice($invoice,$user, $invoice->array_options['options_slimpay_refext']);
+			if ($result < 0) {
+				$error ++;
 			}
 		}
 
@@ -267,6 +251,7 @@ class Slimpay extends CommonObject
 
 	/**
 	 * callUrl
+	 *
 	 * @param string $requestType
 	 */
 	public function callUrl($requestType = '') {
@@ -289,6 +274,91 @@ class Slimpay extends CommonObject
 				dol_syslog(get_class($this) . "::" . __METHOD__ . " ERROR " . $result . " script lauch url:" . $urltocall, LOG_ERR);
 			}
 		}
+		if (empty($error)) {
+			return 1;
+		} else {
+			return - 1;
+		}
+	}
+
+	/**
+	 *
+	 * @param Facture $invoice
+	 * @param User $user
+	 * @param string $ref
+	 * @return int <0 if KO, or 1 if OK
+	 */
+	public function setAsPaidInvoice(Facture $invoice,User $user, $ref='') {
+		global $conf, $langs;
+
+		require_once DOL_DOCUMENT_ROOT . '/compta/paiement/class/paiement.class.php';
+		$paiement = new Paiement($this->db);
+		$paiement->datepaye = dol_now();
+		$paiement->amounts = array (
+				$invoice->id => $invoice->total_ttc
+		); // Array with all payments dispatching
+		$paiement->paiementid = $invoice->mode_reglement_id;
+		$paiement->num_paiement = (empty($ref)?$invoice->array_options['options_slimpay_refext']:$ref);
+		$paiement->note = null;
+
+		if (! $error) {
+			$paiement_id = $paiement->create($user, 1);
+			if ($paiement_id < 0) {
+				$this->errors[] = $paiement->error;
+				$error ++;
+			}
+		}
+
+		if (! $error) {
+			$label = '(CustomerInvoicePayment)';
+			$result = $paiement->addPaymentToBank($user, 'payment', $label, $invoice->fk_account, '', '');
+			if ($result < 0) {
+				$this->errors[] = $paiement->error;
+				$error ++;
+			}
+		}
+
+		if (empty($error)) {
+			return 1;
+		} else {
+			return - 1;
+		}
+	}
+
+	/**
+	 *
+	 * @param string $invoice_ref
+	 * @return int <0 if KO, or 1 if OK
+	 */
+	public function checkPaymentState($invoice_slimpayref = '') {
+		global $conf;
+
+		dol_syslog(get_class($this).'::'.__METHOD__. '$invoice_slimpayref='.$invoice_slimpayref, LOG_DEBUG);
+
+		$authConnect = new Http\Auth\Oauth2BasicAuthentication('/oauth/token', $conf->global->SLIMPAY_USER, $conf->global->SLIMPAY_PASSWORD);
+
+		$hapiClient = new Http\HapiClient($conf->global->SLIMPAY_URLAPI, '/', 'https://api.slimpay.net/alps/v1', $authConnect);
+
+		// The Relations Namespace
+		$relNs = 'https://api.slimpay.net/alps#';
+
+		// Follow get-orders
+		$rel = new Hal\CustomRel($relNs . 'get-orders');
+		$follow = new Http\Follow($rel, 'GET', [
+				'creditorReference' => $conf->global->SLIMPAY_CREDITORREF,
+				'reference' => $invoice_slimpayref
+		]);
+		try {
+			$res = $hapiClient->sendFollow($follow);
+		} catch ( Exception $e ) {
+			$this->errors[] = $e->getMessage();
+			$error ++;
+		}
+
+		// The Resource's state
+		$state = $res->getState();
+		$this->state_invoice=$state->state;
+
 		if (empty($error)) {
 			return 1;
 		} else {
