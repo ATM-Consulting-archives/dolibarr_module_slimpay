@@ -357,7 +357,7 @@ class Slimpay extends CommonObject
 
 		// The Resource's state
 		$state = $res->getState();
-		$this->state_invoice=$state->state;
+		$this->state_invoice=$state['state'];
 
 		if (empty($error)) {
 			return 1;
