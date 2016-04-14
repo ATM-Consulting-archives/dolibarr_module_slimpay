@@ -67,6 +67,12 @@ class ActionsSlimpay
 
 		if (in_array('ordercard', explode(':', $parameters['context'])) && $conf->global->SLIMPAY_ONEVENT == 'SLIMPAY_ONINVOICECREATION') {
 			$confirm = GETPOST('confirm');
+			if ($action == 'validate') {
+				if (empty($object->mode_reglement_id)) {
+					setEventMessage($langs->trans('ErrorFieldRequired', $langs->transnoentities('PaymentMode')), 'errors');
+					return - 1;
+				}
+			}
 			if ($action == 'confirm_validate' && $confirm == 'yes') {
 				if (empty($object->mode_reglement_id)) {
 					setEventMessage($langs->trans('ErrorFieldRequired', $langs->transnoentities('PaymentMode')), 'errors');
@@ -93,7 +99,7 @@ class ActionsSlimpay
 		if (in_array('ordercard', explode(':', $parameters['context'])) && $conf->global->SLIMPAY_ONEVENT == 'SLIMPAY_ONINVOICECREATION') {
 			$confirm = GETPOST('confirm');
 			// After order validation Invoice is created
-			if ($action == 'confirm_validate' && $confirm == 'yes') {
+			if ($action == 'confirm_validate' && $confirm == 'yes' && empty($object->mode_reglement_id)) {
 
 				$out = '';
 
@@ -159,6 +165,13 @@ class ActionsSlimpay
 				}*/
 
 				print $out;
+			}
+		}
+
+		if ($action == 'confirm_validate' && $confirm == 'yes') {
+			if (empty($object->mode_reglement_id)) {
+				setEventMessage($langs->trans('ErrorFieldRequired', $langs->transnoentities('PaymentMode')), 'errors');
+				return - 1;
 			}
 		}
 	}
