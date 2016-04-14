@@ -78,7 +78,6 @@ if (empty($error)) {
 		$error ++;
 	}
 }
-//var_dump($slimpay->state_invoice);
 if (empty($error)) {
 	if ($slimpay->state_invoice == 'closed.completed') {
 		$result = $slimpay->setAsPaidInvoice($invoice,$user);

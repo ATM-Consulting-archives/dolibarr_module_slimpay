@@ -202,7 +202,7 @@ class Slimpay extends CommonObject
 				$error ++;
 			}
 
-			$result = $invoice->validate($user);
+			$result = $invoice->validate($user,'',$conf->global->GRAPEFRUIT_SHIPPING_CREATE_FROM_ORDER_WHERE_BILL_PAID_WAREHOUSE);
 			if ($result < 0) {
 				$this->errors = array_merge($this->errors, $invoice->errors);
 				$error ++;
