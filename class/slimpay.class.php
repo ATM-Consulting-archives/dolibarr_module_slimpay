@@ -199,7 +199,7 @@ class Slimpay extends CommonObject
 					$error ++;
 				}
 
-				$result = $invoice->validate($user,'',$conf->global->GRAPEFRUIT_SHIPPING_CREATE_FROM_ORDER_WHERE_BILL_PAID_WAREHOUSE);
+				$result = $invoice->validate($user, '', $conf->global->GRAPEFRUIT_SHIPPING_CREATE_FROM_ORDER_WHERE_BILL_PAID_WAREHOUSE);
 				if ($result < 0) {
 					$this->errors = array_merge($this->errors, $invoice->errors);
 					$error ++;
@@ -351,13 +351,14 @@ class Slimpay extends CommonObject
 			$error ++;
 		}
 
-		// The Resource's state
-		$state = $res->getState();
+		if (empty($error)) {
+			// The Resource's state
+			$state = $res->getState();
 
+			dol_syslog(get_class($this) . '::' . __METHOD__ . '$state=' . var_export($state, true), LOG_DEBUG);
 
-		dol_syslog(get_class($this) . '::' . __METHOD__ . '$state=' . var_export($state,true), LOG_DEBUG);
-
-		$this->state_invoice = $state['state'];
+			$this->state_invoice = $state['state'];
+		}
 
 		if (empty($error)) {
 			return 1;
