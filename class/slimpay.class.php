@@ -177,8 +177,6 @@ class Slimpay extends CommonObject
 
 		dol_syslog(get_class($this) . '::' . __METHOD__ . '$follow=' . var_export($follow, true), LOG_DEBUG);
 
-		$res = $hapiClient->sendFollow($follow);
-
 		try {
 			$res = $hapiClient->sendFollow($follow);
 		} catch ( Exception $e ) {
