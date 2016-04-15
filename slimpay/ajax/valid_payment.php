@@ -115,11 +115,11 @@ if ($error) {
 	//$db->commit();
 
 	// Call URL before
-	dol_include_once('/slimpay/class/slimpay.class.php');
+	/*dol_include_once('/slimpay/class/slimpay.class.php');
 	$result = $slimpay->callUrl('SLIMPAY_URLAFTER');
 	if ($result < 0) {
 		setEventMessage($slimpay->error, 'errors');
-	}
+	}*/
 
 	print 1;
 }

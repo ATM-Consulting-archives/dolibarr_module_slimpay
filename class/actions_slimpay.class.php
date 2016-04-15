@@ -79,6 +79,23 @@ class ActionsSlimpay
 					return - 1;
 				}
 			}
+
+			if ($object->mode_reglement_id==3) {
+				$object->fetch_thirdparty();
+				$langs->load('companies');
+				if (empty($object->thirdparty->address)) {
+					setEventMessage($langs->trans('ErrorFieldRequired', $langs->transnoentities('ThirdPartyCustomers').'-'.$langs->transnoentities('Address')), 'errors');
+					return - 1;
+				}
+				if (empty($object->thirdparty->zip)) {
+					setEventMessage($langs->trans('ErrorFieldRequired', $langs->transnoentities('ThirdPartyCustomers').'-'.$langs->transnoentities('Zip')), 'errors');
+					return - 1;
+				}
+				if (empty($object->thirdparty->town)) {
+					setEventMessage($langs->trans('ErrorFieldRequired', $langs->transnoentities('ThirdPartyCustomers').'-'.$langs->transnoentities('Town')), 'errors');
+					return - 1;
+				}
+			}
 		}
 
 		return 0;
@@ -97,6 +114,30 @@ class ActionsSlimpay
 		global $conf, $langs;
 
 		if (in_array('ordercard', explode(':', $parameters['context'])) && $conf->global->SLIMPAY_ONEVENT == 'SLIMPAY_ONINVOICECREATION') {
+			$langs->load('slimpay@slimpay');
+			if ($action == 'confirm_validate' && $confirm == 'yes') {
+				if (empty($object->mode_reglement_id)) {
+					setEventMessage($langs->trans('ErrorFieldRequired', $langs->transnoentities('PaymentMode')), 'errors');
+					return - 1;
+				}
+			}
+			if ($object->mode_reglement_id==3) {
+				$object->fetch_thirdparty();
+				$langs->load('companies');
+				if (empty($object->thirdparty->address)) {
+					setEventMessage($langs->trans('ErrorFieldRequired', $langs->transnoentities('ThirdPartyCustomers').'-'.$langs->transnoentities('Address')), 'errors');
+					return - 1;
+				}
+				if (empty($object->thirdparty->zip)) {
+					setEventMessage($langs->trans('ErrorFieldRequired', $langs->transnoentities('ThirdPartyCustomers').'-'.$langs->transnoentities('Zip')), 'errors');
+					return - 1;
+				}
+				if (empty($object->thirdparty->town)) {
+					setEventMessage($langs->trans('ErrorFieldRequired', $langs->transnoentities('ThirdPartyCustomers').'-'.$langs->transnoentities('Town')), 'errors');
+					return - 1;
+				}
+			}
+
 			$confirm = GETPOST('confirm');
 			// After order validation Invoice is created
 			if ($action == 'confirm_validate' && $confirm == 'yes' && !empty($object->mode_reglement_id)) {
@@ -117,14 +158,13 @@ class ActionsSlimpay
 				}
 
 				// Call URL before
-				dol_include_once('/slimpay/class/slimpay.class.php');
+				/*dol_include_once('/slimpay/class/slimpay.class.php');
 				$slimpay = new Slimpay($this->db);
 				$result = $slimpay->callUrl('SLIMPAY_URLBEFORE');
 				if ($result < 0) {
 					setEventMessage($slimpay->error, 'errors');
-				}
+				}*/
 
-				//if ($object->mode_reglement_id==6) {
 				// Display iFrame with Paiement
 				$out = '<div id="paimentvalidation"><iframe src="#" width="100%" height="100%" allowfullscreen webkitallowfullscreen frameborder="0"></iframe></div>' . "\n";
 
@@ -151,28 +191,26 @@ class ActionsSlimpay
 				$out .= '					.fail(function( data ) {' . "\n";
 				$out .= '					  alert( "Error ");' . "\n";
 				$out .= '					});' . "\n";
+				if (!empty($conf->global->SLIMPAY_URLAFTER)) {
+					$out .= '				$.get( \''.$conf->global->SLIMPAY_URLAFTER.'\');' . "\n";
+				}
 				$out .= '				}' . "\n";
 				$out .= '			});' . "\n";
 				$out .= '		$(\'#paimentvalidation iframe\').attr(\'src\',\'' . $paiemnturl . '\');' . "\n";
 				$out .= '	}' . "\n";
 				$out .= '	' . "\n";
 				$out .= '	$(document).ready(function() {' . "\n";
+				if (!empty($conf->global->SLIMPAY_URLBEFORE)) {
+					$out .= '		$.get( \''.$conf->global->SLIMPAY_URLBEFORE.'\');' . "\n";
+				}
 				$out .= '		PaimentValidation_pop();' . "\n";
 				$out .= '	});' . "\n";
 				$out .= '</script>' . "\n";
-				/*} else {
-
-				}*/
 
 				print $out;
 			}
-		}
 
-		if ($action == 'confirm_validate' && $confirm == 'yes') {
-			if (empty($object->mode_reglement_id)) {
-				setEventMessage($langs->trans('ErrorFieldRequired', $langs->transnoentities('PaymentMode')), 'errors');
-				return - 1;
-			}
+			return 0;
 		}
 	}
 }

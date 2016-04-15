@@ -122,10 +122,7 @@ class Slimpay extends CommonObject
 							'autoGenReference' => true,
 							'type' => 'signMandate',
 							'mandate' => array (
-									'createSequenceType' => 'OOFF',
-									'dateSigned' => null,
-									'reference' => null,
-									'rum' => null,
+									'createSequenceType' => "OOFF",
 									'standard' => 'SEPA',
 									'signatory' => array (
 											'companyName' => $invoice->thirdparty->name,
@@ -155,13 +152,11 @@ class Slimpay extends CommonObject
 									'amount' => $invoice->total_ttc,
 									'executionDate' => null,
 									'label' => $mysoc->name . ' - ' . $invoice->ref,
-									'paymentReference' => 'mypayment'
+									'paymentReference' => $invoice->ref
 							)
 					)
 			);
 		}
-
-		// if (empty($type_transac)
 
 		// The Relations Namespace
 		$relNs = 'https://api.slimpay.net/alps#';
@@ -179,6 +174,9 @@ class Slimpay extends CommonObject
 				),
 				'items' => $items
 		)));
+
+		dol_syslog(get_class($this) . '::' . __METHOD__ . '$follow=' . var_export($follow, true), LOG_DEBUG);
+
 		$res = $hapiClient->sendFollow($follow);
 
 		try {
@@ -355,6 +353,10 @@ class Slimpay extends CommonObject
 
 		// The Resource's state
 		$state = $res->getState();
+
+
+		dol_syslog(get_class($this) . '::' . __METHOD__ . '$state=' . var_export($state,true), LOG_DEBUG);
+
 		$this->state_invoice = $state['state'];
 
 		if (empty($error)) {
