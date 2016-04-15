@@ -184,38 +184,40 @@ class Slimpay extends CommonObject
 			$error ++;
 		}
 
-		// The Resource's state
-		$state = $res->getState();
+		if (empty($error)) {
+			// The Resource's state
+			$state = $res->getState();
 
-		dol_syslog(get_class($this) . '::' . __METHOD__ . '$res=' . var_export($res, true) . ' $state=' . var_export($state, true), LOG_DEBUG);
+			dol_syslog(get_class($this) . '::' . __METHOD__ . '$res=' . var_export($res, true) . ' $state=' . var_export($state, true), LOG_DEBUG);
 
-		if (is_array($state) && array_key_exists('reference', $state) && ! empty($state['reference'])) {
+			if (is_array($state) && array_key_exists('reference', $state) && ! empty($state['reference'])) {
 
-			// Valid Invoice
-			$result = $invoice->setBankAccount($conf->global->SLIMPAY_DEFAULTBANK);
-			if ($result < 0) {
-				$this->errors[] = $this->error;
-				$error ++;
-			}
+				// Valid Invoice
+				$result = $invoice->setBankAccount($conf->global->SLIMPAY_DEFAULTBANK);
+				if ($result < 0) {
+					$this->errors[] = $this->error;
+					$error ++;
+				}
 
-			$result = $invoice->validate($user,'',$conf->global->GRAPEFRUIT_SHIPPING_CREATE_FROM_ORDER_WHERE_BILL_PAID_WAREHOUSE);
-			if ($result < 0) {
-				$this->errors = array_merge($this->errors, $invoice->errors);
-				$error ++;
-			}
-
-			$invoice->array_options['options_slimpay_refext'] = $state['reference'];
-			$invoice->array_options['options_slimpay_urlval'] = $res->getLink('https://api.slimpay.net/alps#user-approval')->getHref();
-			if (empty($error)) {
-				$result = $invoice->insertExtraFields($user, true);
+				$result = $invoice->validate($user,'',$conf->global->GRAPEFRUIT_SHIPPING_CREATE_FROM_ORDER_WHERE_BILL_PAID_WAREHOUSE);
 				if ($result < 0) {
 					$this->errors = array_merge($this->errors, $invoice->errors);
 					$error ++;
 				}
+
+				$invoice->array_options['options_slimpay_refext'] = $state['reference'];
+				$invoice->array_options['options_slimpay_urlval'] = $res->getLink('https://api.slimpay.net/alps#user-approval')->getHref();
+				if (empty($error)) {
+					$result = $invoice->insertExtraFields($user, true);
+					if ($result < 0) {
+						$this->errors = array_merge($this->errors, $invoice->errors);
+						$error ++;
+					}
+				}
+			} else {
+				$this->errors[] = get_class($this) . '::' . __METHOD__ . ' Problem with SlimPay';
+				$error ++;
 			}
-		} else {
-			$this->errors[] = get_class($this) . '::' . __METHOD__ . ' Problem with SlimPay';
-			$error ++;
 		}
 
 		// Pass invoice payed if no error
