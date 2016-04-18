@@ -91,7 +91,9 @@ if (empty($error)) {
 		if (is_array($invoice->linkedObjects) && count($invoice->linkedObjects) > 0) {
 			foreach ( $invoice->linkedObjects as $object_type => $object_linked ) {
 				$orderlinked = reset($object_linked);
-				$orderlinked->set_draft($user);
+				if ($object_linked->table_element=='commande'){
+					$orderlinked->set_draft($user);
+				}
 			}
 		}
 	}

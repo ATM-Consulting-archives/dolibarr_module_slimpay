@@ -152,8 +152,10 @@ class ActionsSlimpay
 				if (is_array($object->linkedObjects) && count($object->linkedObjects) > 0) {
 					foreach ( $object->linkedObjects as $object_type => $object_linked ) {
 						$invoicelinked = reset($object_linked);
-						$paiemnturl = $invoicelinked->array_options['options_slimpay_urlval'];
-						$invoice_id = $invoicelinked->id;
+						if ($invoicelinked->table_element=='facture'){
+							$paiemnturl = $invoicelinked->array_options['options_slimpay_urlval'];
+							$invoice_id = $invoicelinked->id;
+						}
 					}
 				}
 
