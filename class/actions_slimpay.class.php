@@ -140,7 +140,7 @@ class ActionsSlimpay
 
 			$confirm = GETPOST('confirm');
 			// After order validation Invoice is created
-			if ($action == 'confirm_validate' && $confirm == 'yes' && !empty($object->mode_reglement_id)) {
+			if ($action == 'confirm_validate' && $confirm == 'yes' && !empty($object->mode_reglement_id) && $object->total_ht>0) {
 
 				$out = '';
 

@@ -74,10 +74,24 @@ if ($result < 0) {
 if (empty($error)) {
 	$result = $slimpay->checkPaymentState($invoice->array_options['options_slimpay_refext']);
 	if ($result < 0) {
-		$error_str .= explode("/n", $slimpay->errors);
+		$error_str .= implode("/n", $slimpay->errors);
 		$error ++;
 	}
 }
+
+//Set order to draft if there is an error on slimpay
+if (!empty($error)) {
+	$invoice->fetchObjectLinked(null, 'order');
+	if (is_array($invoice->linkedObjects) && count($invoice->linkedObjects) > 0) {
+		foreach ( $invoice->linkedObjects as $object_type => $object_linked ) {
+			$orderlinked = reset($object_linked);
+			if ($orderlinked->table_element=='commande'){
+				$orderlinked->set_draft($user);
+			}
+		}
+	}
+}
+
 if (empty($error)) {
 	dol_syslog(__FILE__.' $slimpay->state_invoice='.$slimpay->state_invoice, LOG_DEBUG);
 	if ($slimpay->state_invoice == 'closed.completed') {
@@ -92,7 +106,6 @@ if (empty($error)) {
 		if (is_array($invoice->linkedObjects) && count($invoice->linkedObjects) > 0) {
 			foreach ( $invoice->linkedObjects as $object_type => $object_linked ) {
 				$orderlinked = reset($object_linked);
-				dol_syslog(__FILE__.' $object_linked='.var_export($orderlinked,true), LOG_DEBUG);
 				if ($orderlinked->table_element=='commande'){
 					$orderlinked->set_draft($user);
 				}
@@ -100,6 +113,8 @@ if (empty($error)) {
 		}
 	}
 }
+
+
 
 // If error during payment process
 // Delete invoice
