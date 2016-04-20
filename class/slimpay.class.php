@@ -117,6 +117,13 @@ class Slimpay extends CommonObject
 			);
 		} elseif ($invoice->mode_reglement_id == 3) {
 			// Payment by SEPA MANDAT
+
+			if (!empty($invoice->date_lim_reglement)) {
+				$executionDate=dol_print_date($invoice->date_lim_reglement,'dayhourrfc');
+			} else {
+				$executionDate=null;
+			}
+
 			$items = array (
 					array (
 							'autoGenReference' => true,
@@ -150,7 +157,7 @@ class Slimpay extends CommonObject
 							'type' => 'directDebit',
 							'directDebit' => array (
 									'amount' => $invoice->total_ttc,
-									'executionDate' => null,
+									'executionDate' => $executionDate,
 									'label' => $mysoc->name . ' - ' . $invoice->ref,
 									'paymentReference' => $invoice->ref
 							)
