@@ -70,12 +70,14 @@ class ActionsSlimpay
 			if ($action == 'validate') {
 				if (empty($object->mode_reglement_id)) {
 					setEventMessage($langs->trans('ErrorFieldRequired', $langs->transnoentities('PaymentMode')), 'errors');
+					$action='';
 					return - 1;
 				}
 			}
 			if ($action == 'confirm_validate' && $confirm == 'yes') {
 				if (empty($object->mode_reglement_id)) {
 					setEventMessage($langs->trans('ErrorFieldRequired', $langs->transnoentities('PaymentMode')), 'errors');
+					$action='';
 					return - 1;
 				}
 			}
