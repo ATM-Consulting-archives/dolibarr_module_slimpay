@@ -195,7 +195,7 @@ class ActionsSlimpay
 				$out .= '					.fail(function( data ) {' . "\n";
 				$out .= '					  alert( "Error ");' . "\n";
 				$out .= '					});' . "\n";
-				if (!empty($conf->global->SLIMPAY_URLAFTER)) {
+				if (!empty($conf->global->SLIMPAY_URLAFTER) && filter_var($conf->global->SLIMPAY_URLAFTER,FILTER_VALIDATE_URL)) {
 					$out .= '				$.get( \''.$conf->global->SLIMPAY_URLAFTER.'\');' . "\n";
 				}
 				$out .= '				}' . "\n";
@@ -204,7 +204,7 @@ class ActionsSlimpay
 				$out .= '	}' . "\n";
 				$out .= '	' . "\n";
 				$out .= '	$(document).ready(function() {' . "\n";
-				if (!empty($conf->global->SLIMPAY_URLBEFORE)) {
+				if (!empty($conf->global->SLIMPAY_URLBEFORE)  && filter_var($conf->global->SLIMPAY_URLBEFORE,FILTER_VALIDATE_URL)) {
 					$out .= '		$.get( \''.$conf->global->SLIMPAY_URLBEFORE.'\');' . "\n";
 				}
 				$out .= '		PaimentValidation_pop();' . "\n";

@@ -189,6 +189,9 @@ print '<tr ' . $bc[$var] . '>';
 print '<td width="300px">' . $langs->trans("SLIMPAY_URLBEFORE") . '</td>';
 print '<td>';
 print '<input type="text" size="30" name="SLIMPAY_URLBEFORE" value="' . $conf->global->SLIMPAY_URLBEFORE . '" class="flat"/>';
+if (!empty($conf->global->SLIMPAY_URLBEFORE) && !filter_var($conf->global->SLIMPAY_URLBEFORE,FILTER_VALIDATE_URL)) {
+	print img_warning('This is not a Valid URL');
+}
 print '</td>';
 print '</tr>';
 
@@ -197,6 +200,9 @@ print '<tr ' . $bc[$var] . '>';
 print '<td width="300px">' . $langs->trans("SLIMPAY_URLAFTER") . '</td>';
 print '<td>';
 print '<input type="text" size="30" name="SLIMPAY_URLAFTER" value="' . $conf->global->SLIMPAY_URLAFTER . '" class="flat"/>';
+if (!empty($conf->global->SLIMPAY_URLAFTER) && !filter_var($conf->global->SLIMPAY_URLAFTER,FILTER_VALIDATE_URL)) {
+	print img_warning('This is not a Valid URL');
+}
 print '</td>';
 print '</tr>';
 
