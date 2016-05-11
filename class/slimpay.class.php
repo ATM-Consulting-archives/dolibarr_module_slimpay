@@ -87,7 +87,7 @@ class Slimpay extends CommonObject
 	 * @return int <0 if KO, or 1 if OK
 	 */
 	public function createOrderFromInvoice(Facture $invoice, User $user, $setAsPayed = false) {
-		global $conf, $mysoc;
+		global $conf, $mysoc,$langs;
 
 		$error = 0;
 
@@ -117,6 +117,34 @@ class Slimpay extends CommonObject
 			);
 		} elseif ($invoice->mode_reglement_id == 3) {
 			// Payment by SEPA MANDAT
+			
+			
+			// Find the good contact adress
+			$custcontact_firstname = '';
+			$custcontact_lastname = '';
+			$custcontact_phone='';
+			$contactarr = array();
+			$contactarr = $invoice->liste_contact(- 1, 'external');
+			
+			if (is_array($contactarr) && count($contactarr) > 0) {
+				foreach ($contactarr as $contact) {
+					dol_syslog(get_class($this).'::'.__METHOD__.' lib='.$contact['libelle']);
+					dol_syslog(get_class($this).'::'.__METHOD__.' trans='.$langs->trans('TypeContact_facture_external_BILLING'));
+			
+					if ($contact['libelle'] == $langs->trans('TypeContact_facture_external_BILLING')) {
+			
+						require_once DOL_DOCUMENT_ROOT . '/contact/class/contact.class.php';
+			
+						$contactstatic = new Contact($this->db);
+						$contactstatic->fetch($contact['id']);
+						$custcontact_firstname = $contactstatic->firstname;
+						$custcontact_lastname = $contactstatic->lastname;
+						$custcontact_phone= $contactstatic->phone_perso;
+					}
+				}
+			
+			}
+			
 
 			if (!empty($invoice->date_lim_reglement)) {
 				$executionDate=dol_print_date($invoice->date_lim_reglement,'dayhourrfc');
@@ -134,11 +162,11 @@ class Slimpay extends CommonObject
 									'signatory' => array (
 											'companyName' => $invoice->thirdparty->name,
 											'email' => $invoice->thirdparty->email,
-											'familyName' => $invoice->thirdparty->name,
-											'givenName' => $invoice->thirdparty->name,
+											'familyName' => $custcontact_lastname,
+											'givenName' => $custcontact_firstname,
 											'honorificPrefix' => null,
 											'organizationName' => null,
-											'telephone' => $invoice->thirdparty->phone,
+											'telephone' => (empty($custcontact_phone)?$invoice->thirdparty->phone:$custcontact_phone),
 											'bankAccount' => array (
 													'bic' => null,
 													'iban' => null
@@ -167,7 +195,7 @@ class Slimpay extends CommonObject
 
 		// The Relations Namespace
 		$relNs = 'https://api.slimpay.net/alps#';
-
+		
 		$rel = new Hal\CustomRel($relNs . 'create-orders');
 		$follow = new Http\Follow($rel, 'POST', null, new Http\JsonBody(array (
 				'locale' => 'fr',
