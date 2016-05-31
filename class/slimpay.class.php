@@ -106,7 +106,7 @@ class Slimpay extends CommonObject
 		if ($invoice->mode_reglement_id == 6) {
 			$items = array (
 					array (
-							'type' => cardTransaction,
+							'type' => 'cardTransaction',
 							'cardTransaction' => array (
 									'amount' => $invoice->total_ttc,
 									'executionDate' => null,
@@ -117,7 +117,6 @@ class Slimpay extends CommonObject
 			);
 		} elseif ($invoice->mode_reglement_id == 3) {
 			// Payment by SEPA MANDAT
-			
 			
 			// Find the good contact adress
 			$custcontact_firstname = '';
